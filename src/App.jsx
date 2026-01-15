@@ -3,8 +3,11 @@ import Login from "./pages/Login";
 import Dashboard from "./pages/Dashboard";
 import Kelas from "./pages/Kelas";
 import Quiz from "./pages/Quiz";
+import Forum from "./pages/Forum";
+import Pencapaian from "./pages/Pencapaian";
+import Instruktur from "./pages/Instruktur";
 import AdminLayout from "./layouts/adminLayout";
-import ProgressBar from "./components/ProgressBar"; 
+import ProgressBar from "./components/ProgressBar";
 
 // Komponen untuk melindungi halaman agar hanya bisa diakses setelah login
 function PrivateRoute({ children }) {
@@ -66,6 +69,43 @@ export default function App() {
                   <ProgressBar progress={70} /> {/* Misalnya progres 70% */}
                 </div>
               </div>
+            </PrivateRoute>
+          }
+
+        />
+
+        {/* Forum Diskusi */}
+        <Route
+          path="/admin/forum"
+          element={
+            <PrivateRoute>
+              <AdminLayout>
+                <Forum />
+              </AdminLayout>
+            </PrivateRoute>
+          }
+        />
+
+        {/* Sistem Pencapaian & Gamifikasi */}
+        <Route
+          path="/admin/pencapaian"
+          element={
+            <PrivateRoute>
+              <AdminLayout>
+                <Pencapaian />
+              </AdminLayout>
+            </PrivateRoute>
+          }
+        />
+
+        {/* Halaman Instruktur */}
+        <Route
+          path="/admin/instruktur"
+          element={
+            <PrivateRoute>
+              <AdminLayout>
+                <Instruktur />
+              </AdminLayout>
             </PrivateRoute>
           }
         />

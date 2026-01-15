@@ -12,57 +12,16 @@ import {
   ResponsiveContainer,
 } from "recharts";
 
+import { quizQuestions } from "../utils/dummyData";
+
 /* ===================== KONSTANTA ===================== */
 const QUIZ_DURATION = 300;
-
-/* ===================== SOAL ===================== */
-const quizQuestions = [
-  {
-    id: 1,
-    question: "Apa kepanjangan dari HTML?",
-    options: [
-      "Hyper Text Markup Language",
-      "High Text Machine Language",
-      "Hyperlinks Text Mark Language",
-      "Hyper Tool Markup Language",
-    ],
-    correct: 0,
-  },
-  {
-    id: 2,
-    question: "CSS digunakan untuk?",
-    options: [
-      "Membuat database",
-      "Mengatur tampilan website",
-      "Menjalankan server",
-      "Mengelola API",
-    ],
-    correct: 1,
-  },
-  {
-    id: 3,
-    question: "Bahasa pemrograman untuk web interaktif adalah?",
-    options: ["HTML", "CSS", "JavaScript", "SQL"],
-    correct: 2,
-  },
-  {
-    id: 4,
-    question: "Framework JavaScript adalah?",
-    options: ["Laravel", "Django", "React", "Bootstrap"],
-    correct: 2,
-  },
-  {
-    id: 5,
-    question: "Tag HTML untuk membuat link adalah?",
-    options: ["<div>", "<a>", "<p>", "<link>"],
-    correct: 1,
-  },
-];
 
 /* ===================== MAIN ===================== */
 export default function QuizPage() {
   const [current, setCurrent] = useState(0);
   const [answers, setAnswers] = useState({});
+  const [marked, setMarked] = useState([]);
   const [timeLeft, setTimeLeft] = useState(QUIZ_DURATION);
   const [isRunning, setIsRunning] = useState(true);
 
@@ -74,25 +33,48 @@ export default function QuizPage() {
     }))
   );
 
+  const [timePerQuestion] = useState(
+    quizQuestions.map((_, i) => ({
+      question: `Soal ${i + 1}`,
+      time: Math.floor(Math.random() * 20) + 5, // dummy
+    }))
+  );
+
+  /* ===================== LOAD AUTOSAVE ===================== */
+  useEffect(() => {
+    const saved = JSON.parse(localStorage.getItem("quiz_answers") || "{}");
+    setAnswers(saved);
+  }, []);
+
+  /* ===================== AUTOSAVE ===================== */
+  useEffect(() => {
+    localStorage.setItem("quiz_answers", JSON.stringify(answers));
+  }, [answers]);
+
   /* ===================== TIMER ===================== */
   useEffect(() => {
     if (!isRunning) return;
-
     if (timeLeft <= 0) {
-      handleSubmit();
+      submitQuiz();
       return;
     }
-
     const timer = setInterval(() => {
       setTimeLeft((t) => t - 1);
     }, 1000);
-
     return () => clearInterval(timer);
   }, [timeLeft, isRunning]);
 
-  /* ===================== HANDLER ===================== */
+  /* ===================== LOGIC ===================== */
   const handleAnswer = (value) => {
     setAnswers((prev) => ({ ...prev, [current]: value }));
+  };
+
+  const toggleMark = (index) => {
+    setMarked((prev) =>
+      prev.includes(index)
+        ? prev.filter((i) => i !== index)
+        : [...prev, index]
+    );
   };
 
   const calculateScore = () => {
@@ -106,16 +88,22 @@ export default function QuizPage() {
   const resetQuiz = () => {
     setCurrent(0);
     setAnswers({});
+    setMarked([]);
     setTimeLeft(QUIZ_DURATION);
     setIsRunning(true);
+    localStorage.removeItem("quiz_answers");
   };
 
-  const handleSubmit = () => {
+  const submitQuiz = () => {
     setIsRunning(false);
 
     Swal.fire({
-      title: "Submit Quiz?",
-      icon: "warning",
+      title: "Review & Submit Quiz",
+      html: `
+        <p>Soal dijawab: ${Object.keys(answers).length}</p>
+        <p>Ditandai untuk review: ${marked.length}</p>
+      `,
+      icon: "info",
       showCancelButton: true,
       confirmButtonText: "Submit",
     }).then((res) => {
@@ -139,8 +127,7 @@ export default function QuizPage() {
       );
 
       Swal.fire("Selesai!", `Nilai Anda: ${score}`, "success");
-
-      setTimeout(resetQuiz, 500);
+      setTimeout(resetQuiz, 800);
     });
   };
 
@@ -148,7 +135,7 @@ export default function QuizPage() {
 
   /* ===================== RENDER ===================== */
   return (
-    <div className="min-h-screen p-8 bg-gray-100 text-gray-900 space-y-10">
+    <div className="min-h-screen p-8 bg-gray-100 space-y-10">
       <h1 className="text-3xl font-bold">Quiz Interaktif</h1>
 
       {/* TIMER */}
@@ -159,7 +146,7 @@ export default function QuizPage() {
 
       {/* QUIZ */}
       <motion.div
-        initial={{ opacity: 0, y: 15 }}
+        initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
         className="bg-white p-6 rounded-xl shadow"
       >
@@ -174,12 +161,20 @@ export default function QuizPage() {
                 type="radio"
                 checked={answers[current] === i}
                 onChange={() => handleAnswer(i)}
-                className="accent-blue-600"
               />
-              <span>{opt}</span>
+              {opt}
             </label>
           ))}
         </div>
+
+        <button
+          onClick={() => toggleMark(current)}
+          className="mt-3 text-sm text-yellow-600 underline"
+        >
+          {marked.includes(current)
+            ? "Batal tandai"
+            : "Tandai untuk review"}
+        </button>
 
         {/* NAV */}
         <div className="flex justify-between mt-6">
@@ -193,10 +188,10 @@ export default function QuizPage() {
 
           {current === quizQuestions.length - 1 ? (
             <button
-              onClick={handleSubmit}
+              onClick={submitQuiz}
               className="px-6 py-2 bg-green-600 text-white rounded font-semibold"
             >
-              Submit
+              Review & Submit
             </button>
           ) : (
             <button
@@ -207,10 +202,32 @@ export default function QuizPage() {
             </button>
           )}
         </div>
+
+        {/* NAVIGATION SOAL */}
+        <div className="flex flex-wrap gap-2 mt-6">
+          {quizQuestions.map((_, i) => (
+            <button
+              key={i}
+              onClick={() => setCurrent(i)}
+              className={`w-9 h-9 rounded-full text-sm font-semibold
+                ${
+                  current === i
+                    ? "bg-blue-600 text-white"
+                    : marked.includes(i)
+                    ? "bg-yellow-400"
+                    : answers[i] !== undefined
+                    ? "bg-green-500 text-white"
+                    : "bg-gray-300"
+                }`}
+            >
+              {i + 1}
+            </button>
+          ))}
+        </div>
       </motion.div>
 
-      {/* CHART */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+      {/* ANALITIK */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <ChartCard title="Riwayat Nilai">
           <LineChart data={historyData}>
             <XAxis dataKey="attempt" />
@@ -220,12 +237,21 @@ export default function QuizPage() {
           </LineChart>
         </ChartCard>
 
-        <ChartCard title="Akurasi Jawaban">
+        <ChartCard title="Akurasi per Soal">
           <BarChart data={accuracyData}>
             <XAxis dataKey="question" />
             <YAxis />
             <Tooltip />
             <Bar dataKey="accuracy" fill="#3b82f6" />
+          </BarChart>
+        </ChartCard>
+
+        <ChartCard title="Waktu per Soal (detik)">
+          <BarChart data={timePerQuestion}>
+            <XAxis dataKey="question" />
+            <YAxis />
+            <Tooltip />
+            <Bar dataKey="time" fill="#f97316" />
           </BarChart>
         </ChartCard>
       </div>

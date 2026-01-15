@@ -1,4 +1,3 @@
-import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   BookOpen,
@@ -31,23 +30,18 @@ import {
   PolarRadiusAxis,
 } from "recharts";
 
-import { mapDashboardData } from "../utils/dashboardMapper";
+import {
+  dashboardSummary,
+  weeklyProgress,
+  studyTimeByCategory,
+  moduleStatusDistribution,
+  cumulativeStudyTime,
+  skillRadarData,
+  quickActions,
+} from "../utils/dummyData";
 
 export default function Dashboard() {
   const navigate = useNavigate();
-  const [data, setData] = useState(null);
-
-  useEffect(() => {
-    if (!localStorage.getItem("user")) {
-      navigate("/");
-      return;
-    }
-
-    const kelas = localStorage.getItem("kelas") || "TI";
-    setData(mapDashboardData(kelas));
-  }, [navigate]);
-
-  if (!data) return null;
 
   return (
     <div className="min-h-screen p-8 bg-gray-100">
@@ -57,48 +51,65 @@ export default function Dashboard() {
 
       {/* ================= RINGKASAN ================= */}
       <div className="grid grid-cols-4 gap-4 mb-8">
-        <Summary icon={<BookOpen />} title="Modul" value={`${data.completedMateri}/${data.totalMateri}`} />
-        <Summary icon={<Flame />} title="Streak" value={`${data.streak} hari`} />
-        <Summary icon={<Star />} title="Poin" value={data.points} />
-        <Summary icon={<BarChart2 />} title="Progress" value={`${data.progress}%`} />
+        <Summary
+          icon={<BookOpen />}
+          title="Modul"
+          value={`${dashboardSummary.completedModules}/${dashboardSummary.totalModules}`}
+        />
+        <Summary
+          icon={<Flame />}
+          title="Streak"
+          value={`${dashboardSummary.studyStreak} hari`}
+        />
+        <Summary
+          icon={<Star />}
+          title="Poin"
+          value={dashboardSummary.achievementPoints}
+        />
+        <Summary
+          icon={<BarChart2 />}
+          title="Progress"
+          value={`${Math.round(
+            (dashboardSummary.completedModules /
+              dashboardSummary.totalModules) *
+              100
+          )}%`}
+        />
       </div>
 
       {/* ================= AKSI CEPAT ================= */}
       <div className="grid grid-cols-4 gap-4 mb-8">
         <ActionCard
           icon={<PlayCircle />}
-          label={`Lanjutkan: ${data.nextMateriTitle}`}
+          label={`Lanjutkan : ${quickActions.lastModule.title}`}
           onClick={() =>
-            navigate(
-              data.nextMateriId
-                ? `/kelas?materi=${data.nextMateriId}`
-                : "/kelas"
-            )
+            navigate(`/admin/kelas?materi=${quickActions.lastModule.id}`)
           }
         />
 
         <ActionCard
           icon={<Target />}
-          label={`Target: ${data.targetToday.done}/${data.targetToday.target} mnt`}
+          label={`Target: ${quickActions.todayTarget.completedMinutes}/${quickActions.todayTarget.targetMinutes} mnt`}
         />
 
         <ActionCard
           icon={<Star />}
-          label={`Rekomendasi: ${data.recommendedModule}`}
+          label={`Rekomendasi: ${quickActions.recommendedModule.title}`}
         />
 
         <ActionCard
           icon={<Bookmark />}
-          label={`Bookmark (${data.bookmarkCount})`}
+          label={`Bookmark (${quickActions.bookmarks.length})`}
         />
       </div>
 
       {/* ================= GRAFIK ================= */}
       <div className="grid grid-cols-2 gap-6 mb-6">
+        {/* LINE */}
         <ChartCard title="Progress Mingguan">
           <ResponsiveContainer width="100%" height={250}>
-            <LineChart data={data.progressMingguan}>
-              <XAxis dataKey="minggu" />
+            <LineChart data={weeklyProgress}>
+              <XAxis dataKey="week" />
               <YAxis />
               <Tooltip />
               <Line dataKey="progress" stroke="#22c55e" strokeWidth={3} />
@@ -106,11 +117,17 @@ export default function Dashboard() {
           </ResponsiveContainer>
         </ChartCard>
 
+        {/* PIE */}
         <ChartCard title="Status Modul">
           <ResponsiveContainer width="100%" height={250}>
             <PieChart>
-              <Pie data={data.statusModul} dataKey="value" nameKey="name" label>
-                {data.statusModul.map((_, i) => (
+              <Pie
+                data={moduleStatusDistribution}
+                dataKey="value"
+                nameKey="name"
+                label
+              >
+                {moduleStatusDistribution.map((_, i) => (
                   <Cell
                     key={i}
                     fill={["#22c55e", "#facc15", "#ef4444"][i]}
@@ -123,9 +140,40 @@ export default function Dashboard() {
         </ChartCard>
       </div>
 
+      <div className="grid grid-cols-2 gap-6 mb-6">
+        {/* BAR */}
+        <ChartCard title="Waktu Belajar per Kategori">
+          <ResponsiveContainer width="100%" height={250}>
+            <BarChart data={studyTimeByCategory}>
+              <XAxis dataKey="category" />
+              <YAxis />
+              <Tooltip />
+              <Bar dataKey="minutes" fill="#3b82f6" />
+            </BarChart>
+          </ResponsiveContainer>
+        </ChartCard>
+
+        {/* AREA */}
+        <ChartCard title="Akumulasi Jam Belajar">
+          <ResponsiveContainer width="100%" height={250}>
+            <AreaChart data={cumulativeStudyTime}>
+              <XAxis dataKey="day" />
+              <YAxis />
+              <Tooltip />
+              <Area
+                dataKey="hours"
+                stroke="#22c55e"
+                fill="#bbf7d0"
+              />
+            </AreaChart>
+          </ResponsiveContainer>
+        </ChartCard>
+      </div>
+
+      {/* RADAR */}
       <ChartCard title="Penilaian Kemampuan">
         <ResponsiveContainer width="100%" height={300}>
-          <RadarChart data={data.skillRadar}>
+          <RadarChart data={skillRadarData}>
             <PolarGrid />
             <PolarAngleAxis dataKey="skill" />
             <PolarRadiusAxis />

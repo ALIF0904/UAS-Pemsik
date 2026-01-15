@@ -3,9 +3,12 @@ import Swal from "sweetalert2";
 import {
   Home,
   BookOpen,
+  BarChart2,
+  ClipboardList,
+  Trophy,
+  GraduationCap,
   LogOut,
   User,
-  BarChart2,
 } from "lucide-react";
 
 export default function Sidebar() {
@@ -17,7 +20,10 @@ export default function Sidebar() {
     { label: "Dashboard", icon: Home, path: "/admin/dashboard" },
     { label: "Kelas", icon: BookOpen, path: "/admin/kelas" },
     { label: "Progress", icon: BarChart2, path: "/admin/progress" },
-    { label: "Quiz", icon: BarChart2, path: "/admin/Quiz" },
+    { label: "Quiz", icon: ClipboardList, path: "/admin/quiz" },
+    { label: "Forum", icon: ClipboardList, path: "/admin/forum" },
+    { label: "Pencapaian", icon: Trophy, path: "/admin/pencapaian" },
+    { label: "Instruktur", icon: GraduationCap, path: "/admin/instruktur" },
   ];
 
   const handleLogout = () => {
